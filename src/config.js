@@ -2,6 +2,7 @@ export const CONFIG = {
     targetUrl: process.env.TARGET_URL || 'http://localhost:7800',
     testerPort: parseInt(process.env.TESTER_PORT || '7801'),
     viewport: { width: 1280, height: 800 },
+    userDataDir: process.env.USER_DATA_DIR || './.drifter_profile',
     screenshotQuality: 40,
     heartbeatInterval: 1000,
     visualPause: 2000,

@@ -1,6 +1,6 @@
 import http from 'http';
 import { CONFIG } from './config.js';
-import { drift } from './crawler.js';
+import { drift, openBrowserForLogin } from './crawler.js';
 import { dashboard } from './ui.js';
 
 /**
@@ -29,8 +29,21 @@ const server = http.createServer(async (req, res) => {
             res.write(`data: ${JSON.stringify({ type: 'end', report: results })}\n\n`);
         } catch (e) {
             res.write(`data: ${JSON.stringify({ type: 'issue', msg: e.message })}\n\n`);
+            res.write(`data: ${JSON.stringify({ type: 'end', report: { error: e.message } })}\n\n`);
         }
         res.end();
+    } else if (path === '/login') {
+        const urlObj = new URL(req.url, `http://${req.headers.host}`);
+        const targetUrl = urlObj.searchParams.get('url') || CONFIG.targetUrl;
+
+        try {
+            await openBrowserForLogin(targetUrl);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true }));
+        } catch (e) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: e.message }));
+        }
     } else {
         res.writeHead(404).end();
     }

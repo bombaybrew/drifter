@@ -32,6 +32,7 @@ export const dashboard = `
             </div>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
+            <button id="loginBtn" style="background:#10b981;">Manual Login</button>
             <button id="run">Run Drift Session</button>
             <button id="viewSummary" disabled style="background:#475569;">Summary</button>
             <button id="clearLogs" style="background:#475569;">Clear</button>
@@ -49,6 +50,7 @@ export const dashboard = `
     <script>
         const btn = document.getElementById('run');
         const summaryBtn = document.getElementById('viewSummary');
+        const loginBtn = document.getElementById('loginBtn');
         const clearBtn = document.getElementById('clearLogs');
         const vid = document.getElementById('vid');
         const out = document.getElementById('out');
@@ -57,6 +59,25 @@ export const dashboard = `
         const targetUrlInput = document.getElementById('targetUrl');
         const visualPauseInput = document.getElementById('visualPause');
         const maxDepthInput = document.getElementById('maxDepth');
+
+        loginBtn.onclick = async () => {
+            loginBtn.disabled = true;
+            loginBtn.innerText = 'Wait, browser is open...';
+            try {
+                const url = encodeURIComponent(targetUrlInput.value);
+                const res = await fetch(\`/login?url=\${url}\`);
+                if (!res.ok) {
+                    const err = await res.json();
+                    alert("Login failed: " + (err.error || 'Unknown error'));
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Network error: " + e.message);
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.innerText = 'Manual Login';
+            }
+        };
 
         clearBtn.onclick = () => {
             out.innerHTML = '';
