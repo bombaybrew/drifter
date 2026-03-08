@@ -8,9 +8,9 @@ export const dashboard = `
         body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         header { background: var(--panel); padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
         .main { display: flex; flex: 1; overflow: hidden; }
-        .view { flex: 2; border-right: 1px solid var(--border); background: #000; position: relative; }
+        .view { flex: 2; border-left: 1px solid var(--border); background: #000; position: relative; }
         .label { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.8); color: var(--ok); padding: 4px 8px; font-size: 10px; border-radius: 4px; font-weight: 800; border: 1px solid var(--ok); }
-        .logs { flex: 1; display: flex; flex-direction: column; background: var(--panel); border-left: 1px solid var(--border); }
+        .logs { flex: 1; display: flex; flex-direction: column; background: var(--panel); border-right: 1px solid var(--border); }
         .l-head { padding: 8px 16px; background: var(--bg); border-bottom: 1px solid var(--border); font-size: 10px; font-weight: 800; color: #64748b; }
         .entries { flex: 1; overflow-y: auto; padding: 15px; font-family: monospace; font-size: 12px; }
         .line { border-left: 2px solid var(--accent); padding-left: 10px; margin-bottom: 8px; }
@@ -37,8 +37,8 @@ export const dashboard = `
         </div>
     </header>
     <div class="main">
-        <div class="view"><div class="label">LIVE_PREVIEW</div><img id="vid" /></div>
         <div class="logs"><div class="l-head">SESSION_LOGS</div><div id="out" class="entries"></div></div>
+        <div class="view"><div class="label">PREVIEW</div><img id="vid" /></div>
     </div>
     <div id="modal">
         <h2 style="color:var(--accent); margin-top:0">Session Summary</h2>
@@ -67,12 +67,17 @@ export const dashboard = `
             modal.style.display = 'block';
         };
 
+        let lastScreen = null;
+        let hoverActive = false;
+
         btn.onclick = () => {
             btn.disabled = true;
             summaryBtn.disabled = true;
             summaryBtn.style.background = '#475569';
             out.innerHTML = '';
             vid.removeAttribute('src');
+            lastScreen = null;
+            hoverActive = false;
             
             const url = encodeURIComponent(targetUrlInput.value);
             const wait = visualPauseInput.value;
@@ -85,23 +90,46 @@ export const dashboard = `
                     btn.disabled = false;
                     summaryBtn.disabled = false;
                     summaryBtn.style.background = 'var(--accent)';
-                    show(d.report);
+                    buildSummary(d.report);
                     return;
                 }
-                if (d.screenshot) vid.src = 'data:image/webp;base64,' + d.screenshot;
+                if (d.screenshot) {
+                    lastScreen = d.screenshot;
+                    if (!hoverActive) vid.src = 'data:image/webp;base64,' + d.screenshot;
+                }
                 if (d.msg) {
                     const l = document.createElement('div');
                     l.className = 'line' + (d.type === 'issue' ? ' err' : '');
                     l.innerText = d.msg;
+                    
+                    if (lastScreen) {
+                        const snap = 'data:image/webp;base64,' + lastScreen;
+                        l.dataset.snap = snap;
+                        l.style.cursor = 'crosshair';
+                        l.style.transition = 'background 0.2s';
+                        l.onmouseenter = () => {
+                            hoverActive = true;
+                            vid.src = snap;
+                            l.style.background = 'rgba(255,255,255,0.05)';
+                        };
+                        l.onmouseleave = () => {
+                            hoverActive = false;
+                            if (lastScreen) vid.src = 'data:image/webp;base64,' + lastScreen;
+                            l.style.background = 'transparent';
+                        };
+                    }
+                    
                     out.appendChild(l); out.scrollTop = out.scrollHeight;
                 }
             };
         };
 
-        function show(data) {
-            modal.style.display = 'block';
+        function buildSummary(data) {
             const urls = Object.keys(data);
-            if (!urls.length) return res.innerHTML = 'No Regressions Found.';
+            if (!urls.length) {
+                res.innerHTML = 'No Regressions Found.';
+                return;
+            }
             res.innerHTML = urls.map(u => \`
                 <div style="margin-bottom:15px">
                     <b style="color:var(--accent)">\${u}</b>
