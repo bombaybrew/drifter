@@ -14,12 +14,17 @@ function clearLocks() {
     });
 }
 
+let activeManualBrowser = null;
+
 export async function openBrowserForLogin(targetUrl = CONFIG.targetUrl) {
+    if (activeManualBrowser) {
+        try { await activeManualBrowser.close(); } catch (e) { }
+    }
+
     clearLocks();
 
-    let browser;
     try {
-        browser = await puppeteer.launch({
+        activeManualBrowser = await puppeteer.launch({
             headless: false,
             userDataDir: CONFIG.userDataDir,
             args: ['--no-sandbox']
@@ -28,16 +33,23 @@ export async function openBrowserForLogin(targetUrl = CONFIG.targetUrl) {
         throw new Error(`Could not open login window. Is another Drifter window still open? (${e.message})`);
     }
 
-    const page = await browser.newPage();
+    const page = await activeManualBrowser.newPage();
     await page.setViewport(CONFIG.viewport);
     await page.goto(targetUrl).catch(() => { });
 
-    // Wait for the user to close the browser
     return new Promise((resolve) => {
-        browser.on('disconnected', () => {
+        activeManualBrowser.on('disconnected', () => {
+            activeManualBrowser = null;
             resolve();
         });
     });
+}
+
+export async function closeManualLogin() {
+    if (activeManualBrowser) {
+        await activeManualBrowser.close();
+        activeManualBrowser = null;
+    }
 }
 
 export async function drift(onProgress, options = {}) {

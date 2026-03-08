@@ -1,6 +1,6 @@
 import http from 'http';
 import { CONFIG } from './config.js';
-import { drift, openBrowserForLogin } from './crawler.js';
+import { drift, openBrowserForLogin, closeManualLogin } from './crawler.js';
 import { dashboard } from './ui.js';
 
 /**
@@ -38,6 +38,15 @@ const server = http.createServer(async (req, res) => {
 
         try {
             await openBrowserForLogin(targetUrl);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true }));
+        } catch (e) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: e.message }));
+        }
+    } else if (path === '/close-login') {
+        try {
+            await closeManualLogin();
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ success: true }));
         } catch (e) {
