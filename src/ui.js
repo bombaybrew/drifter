@@ -12,9 +12,9 @@ export const dashboard = `
         .label { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.8); color: var(--ok); padding: 4px 8px; font-size: 10px; border-radius: 4px; font-weight: 800; border: 1px solid var(--ok); }
         .logs { flex: 1; display: flex; flex-direction: column; background: var(--panel); border-right: 1px solid var(--border); }
         .l-head { padding: 8px 16px; background: var(--bg); border-bottom: 1px solid var(--border); font-size: 10px; font-weight: 800; color: #64748b; }
-        .entries { flex: 1; overflow-y: auto; padding: 15px; font-family: monospace; font-size: 12px; }
-        .line { border-left: 2px solid var(--accent); padding-left: 10px; margin-bottom: 8px; }
-        .line.err { border-color: var(--err); color: #fda4af; }
+        .entries { flex: 1; overflow-y: auto; padding: 0; font-family: monospace; font-size: 12px; }
+        .line { border-left: 2px solid var(--accent); padding: 6px 15px; margin: 0; border-bottom: 1px solid rgba(255,255,255,0.02); }
+        .line.err { border-left-color: var(--err); color: #fda4af; }
         img { width: 100%; height: 100%; object-fit: contain; }
         button { background: var(--accent); color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; }
         button:disabled { opacity: 0.5; }
@@ -28,6 +28,7 @@ export const dashboard = `
             <div style="display:flex; align-items:center; gap:10px; font-size:12px; opacity:0.8;">
                 <label>URL: <input id="targetUrl" value="http://localhost:7800" style="background:#0f172a; color:#fff; border:1px solid var(--border); padding:4px 8px; border-radius:4px; width:200px;"></label>
                 <label>Wait (ms): <input id="visualPause" type="number" value="2000" style="background:#0f172a; color:#fff; border:1px solid var(--border); padding:4px 8px; border-radius:4px; width:60px;"></label>
+                <label>Max Depth: <input id="maxDepth" type="number" value="2" style="background:#0f172a; color:#fff; border:1px solid var(--border); padding:4px 8px; border-radius:4px; width:40px;"></label>
             </div>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
@@ -55,6 +56,7 @@ export const dashboard = `
         const res = document.getElementById('res');
         const targetUrlInput = document.getElementById('targetUrl');
         const visualPauseInput = document.getElementById('visualPause');
+        const maxDepthInput = document.getElementById('maxDepth');
 
         clearBtn.onclick = () => {
             out.innerHTML = '';
@@ -81,7 +83,8 @@ export const dashboard = `
             
             const url = encodeURIComponent(targetUrlInput.value);
             const wait = visualPauseInput.value;
-            const sse = new EventSource(\`/stream?url=\${url}&wait=\${wait}\`);
+            const depth = maxDepthInput.value;
+            const sse = new EventSource(\`/stream?url=\${url}&wait=\${wait}&depth=\${depth}\`);
             
             sse.onmessage = (e) => {
                 const d = JSON.parse(e.data);

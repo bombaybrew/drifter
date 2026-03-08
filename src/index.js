@@ -16,10 +16,12 @@ const server = http.createServer(async (req, res) => {
         const urlObj = new URL(req.url, `http://${req.headers.host}`);
         const targetUrl = urlObj.searchParams.get('url');
         const waitTime = urlObj.searchParams.get('wait');
+        const depth = urlObj.searchParams.get('depth');
 
         const options = {};
         if (targetUrl) options.targetUrl = targetUrl;
         if (waitTime) options.visualPause = parseInt(waitTime);
+        if (depth) options.maxDepth = parseInt(depth);
 
         res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' });
         try {
