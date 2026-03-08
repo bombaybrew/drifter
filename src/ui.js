@@ -23,8 +23,18 @@ export const dashboard = `
 </head>
 <body>
     <header>
-        <div style="display:flex; align-items:center; gap:10px"><b>Drifter</b></div>
-        <button id="run">Run Drift Session</button>
+        <div style="display:flex; align-items:center; gap:20px;">
+            <div style="display:flex; align-items:center; gap:10px"><b>Drifter</b></div>
+            <div style="display:flex; align-items:center; gap:10px; font-size:12px; opacity:0.8;">
+                <label>URL: <input id="targetUrl" value="http://localhost:7800" style="background:#0f172a; color:#fff; border:1px solid var(--border); padding:4px 8px; border-radius:4px; width:200px;"></label>
+                <label>Wait (ms): <input id="visualPause" type="number" value="2000" style="background:#0f172a; color:#fff; border:1px solid var(--border); padding:4px 8px; border-radius:4px; width:60px;"></label>
+            </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <button id="run">Run Drift Session</button>
+            <button id="viewSummary" disabled style="background:#475569;">Summary</button>
+            <button id="clearLogs" style="background:#475569;">Clear</button>
+        </div>
     </header>
     <div class="main">
         <div class="view"><div class="label">LIVE_PREVIEW</div><img id="vid" /></div>
@@ -33,23 +43,50 @@ export const dashboard = `
     <div id="modal">
         <h2 style="color:var(--accent); margin-top:0">Session Summary</h2>
         <div id="res"></div>
-        <button onclick="location.reload()" style="margin-top:20px">Close & Reset</button>
+        <button onclick="document.getElementById('modal').style.display='none'" style="margin-top:20px">Close</button>
     </div>
     <script>
         const btn = document.getElementById('run');
+        const summaryBtn = document.getElementById('viewSummary');
+        const clearBtn = document.getElementById('clearLogs');
         const vid = document.getElementById('vid');
         const out = document.getElementById('out');
         const modal = document.getElementById('modal');
         const res = document.getElementById('res');
+        const targetUrlInput = document.getElementById('targetUrl');
+        const visualPauseInput = document.getElementById('visualPause');
+
+        clearBtn.onclick = () => {
+            out.innerHTML = '';
+            vid.removeAttribute('src');
+            summaryBtn.disabled = true;
+            summaryBtn.style.background = '#475569';
+        };
+
+        summaryBtn.onclick = () => {
+            modal.style.display = 'block';
+        };
 
         btn.onclick = () => {
-            btn.disabled = true; out.innerHTML = '';
-            const sse = new EventSource('/stream');
+            btn.disabled = true;
+            summaryBtn.disabled = true;
+            summaryBtn.style.background = '#475569';
+            out.innerHTML = '';
+            vid.removeAttribute('src');
+            
+            const url = encodeURIComponent(targetUrlInput.value);
+            const wait = visualPauseInput.value;
+            const sse = new EventSource(\`/stream?url=\${url}&wait=\${wait}\`);
+            
             sse.onmessage = (e) => {
                 const d = JSON.parse(e.data);
                 if (d.type === 'end') {
-                    sse.close(); btn.disabled = false;
-                    show(d.report); return;
+                    sse.close();
+                    btn.disabled = false;
+                    summaryBtn.disabled = false;
+                    summaryBtn.style.background = 'var(--accent)';
+                    show(d.report);
+                    return;
                 }
                 if (d.screenshot) vid.src = 'data:image/webp;base64,' + d.screenshot;
                 if (d.msg) {

@@ -5,13 +5,16 @@ import { CONFIG } from './config.js';
  * THE DRIFT ENGINE
  * Recursively crawls the target URL and captures console/network issues.
  */
-export async function drift(onProgress) {
+export async function drift(onProgress, options = {}) {
+    const targetUrl = options.targetUrl || CONFIG.targetUrl;
+    const visualPause = options.visualPause !== undefined ? options.visualPause : CONFIG.visualPause;
+
     const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
     const page = await browser.newPage();
     await page.setViewport(CONFIG.viewport);
 
     const visited = new Set();
-    const queue = [CONFIG.targetUrl];
+    const queue = [targetUrl];
     const report = {};
 
     const update = (msg, type = 'log') => onProgress({ msg, type });
@@ -73,7 +76,7 @@ export async function drift(onProgress) {
 
             if (!ready) await nav;
 
-            await new Promise(r => setTimeout(r, CONFIG.visualPause));
+            await new Promise(r => setTimeout(r, visualPause));
             update(`Scanned: ${url}`);
 
             const links = await page.evaluate(() =>
@@ -83,7 +86,7 @@ export async function drift(onProgress) {
             );
 
             links.forEach(l => {
-                if (l.startsWith(CONFIG.targetUrl) && !visited.has(l) && !queue.includes(l)) queue.push(l);
+                if (l.startsWith(targetUrl) && !visited.has(l) && !queue.includes(l)) queue.push(l);
             });
 
         } catch (e) {
