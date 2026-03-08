@@ -1,0 +1,78 @@
+export const dashboard = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Drifter Live Monitor</title>
+    <style>
+        :root { --bg: #0f172a; --panel: #1e293b; --border: #334155; --text: #f8fafc; --accent: #3b82f6; --err: #f43f5e; --ok: #10b981; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        header { background: var(--panel); padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .main { display: flex; flex: 1; overflow: hidden; }
+        .view { flex: 2; border-right: 1px solid var(--border); background: #000; position: relative; }
+        .label { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.8); color: var(--ok); padding: 4px 8px; font-size: 10px; border-radius: 4px; font-weight: 800; border: 1px solid var(--ok); }
+        .logs { flex: 1; display: flex; flex-direction: column; background: var(--panel); border-left: 1px solid var(--border); }
+        .l-head { padding: 8px 16px; background: var(--bg); border-bottom: 1px solid var(--border); font-size: 10px; font-weight: 800; color: #64748b; }
+        .entries { flex: 1; overflow-y: auto; padding: 15px; font-family: monospace; font-size: 12px; }
+        .line { border-left: 2px solid var(--accent); padding-left: 10px; margin-bottom: 8px; }
+        .line.err { border-color: var(--err); color: #fda4af; }
+        img { width: 100%; height: 100%; object-fit: contain; }
+        button { background: var(--accent); color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        button:disabled { opacity: 0.5; }
+        #modal { display: none; position: fixed; inset: 10%; background: var(--panel); border: 1px solid var(--accent); border-radius: 12px; z-index: 100; padding: 30px; overflow: auto; box-shadow: 0 0 50px rgba(0,0,0,0.7); }
+    </style>
+</head>
+<body>
+    <header>
+        <div style="display:flex; align-items:center; gap:10px"><b>Drifter</b></div>
+        <button id="run">Run Drift Session</button>
+    </header>
+    <div class="main">
+        <div class="view"><div class="label">LIVE_PREVIEW</div><img id="vid" /></div>
+        <div class="logs"><div class="l-head">SESSION_LOGS</div><div id="out" class="entries"></div></div>
+    </div>
+    <div id="modal">
+        <h2 style="color:var(--accent); margin-top:0">Session Summary</h2>
+        <div id="res"></div>
+        <button onclick="location.reload()" style="margin-top:20px">Close & Reset</button>
+    </div>
+    <script>
+        const btn = document.getElementById('run');
+        const vid = document.getElementById('vid');
+        const out = document.getElementById('out');
+        const modal = document.getElementById('modal');
+        const res = document.getElementById('res');
+
+        btn.onclick = () => {
+            btn.disabled = true; out.innerHTML = '';
+            const sse = new EventSource('/stream');
+            sse.onmessage = (e) => {
+                const d = JSON.parse(e.data);
+                if (d.type === 'end') {
+                    sse.close(); btn.disabled = false;
+                    show(d.report); return;
+                }
+                if (d.screenshot) vid.src = 'data:image/webp;base64,' + d.screenshot;
+                if (d.msg) {
+                    const l = document.createElement('div');
+                    l.className = 'line' + (d.type === 'issue' ? ' err' : '');
+                    l.innerText = d.msg;
+                    out.appendChild(l); out.scrollTop = out.scrollHeight;
+                }
+            };
+        };
+
+        function show(data) {
+            modal.style.display = 'block';
+            const urls = Object.keys(data);
+            if (!urls.length) return res.innerHTML = 'No Regressions Found.';
+            res.innerHTML = urls.map(u => \`
+                <div style="margin-bottom:15px">
+                    <b style="color:var(--accent)">\${u}</b>
+                    \${data[u].map(i => \`<div style="font-size:12px; margin-left:15px; opacity:0.7">[\${i.type}] \${i.text}</div>\`).join('')}
+                </div>
+            \`).join('');
+        }
+    </script>
+</body>
+</html>
+`;

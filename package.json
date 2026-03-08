@@ -4,7 +4,7 @@
     "description": "Drifter: A generic, zero-maintenance UI crawling engine to catch console errors and regressions.",
     "type": "module",
     "scripts": {
-        "start": "node crawler.js"
+        "start": "node src/index.js"
     },
     "dependencies": {
         "puppeteer": "^22.6.0"

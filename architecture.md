@@ -1,4 +1,4 @@
-# 🧭 Drifter Architecture
+# Drifter Architecture
 
 ## Purpose
 Drifter is a generic, zero-maintenance UI testing engine.
